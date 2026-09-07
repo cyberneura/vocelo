@@ -5,12 +5,17 @@ import AVFoundation
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let statusLine = NSMenuItem(title: "Starting…", action: nil, keyEquivalent: "")
+    private let voiceInputItem = NSMenuItem(title: "Start Voice Input", action: nil, keyEquivalent: "")
     private let hotkey = HotKeyManager()
     private let speech = SpeechManager()
     private let insertion = TextInsertion()
+    private let overlay = TranscriptOverlay()
     private var config = VoceloConfig()
     private var configured = false
     private var held = false
+    // Recording started from the menu is not ended by hotkey release; it ends on the next
+    // menu click or hotkey press, so a stray release event cannot cut it short.
+    private var menuSession = false
     private var target: TextInsertion.Target?
     private var lastTranscript = ""
     private var insertionTask: Task<Void, Never>?
@@ -23,6 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Vocelo", action: nil, keyEquivalent: ""))
         menu.addItem(statusLine)
         menu.addItem(.separator())
+        voiceInputItem.action = #selector(toggleVoiceInput)
+        voiceInputItem.target = self
+        menu.addItem(voiceInputItem)
+        menu.addItem(.separator())
         add("Grant Permissions…", action: #selector(grantPermissions), to: menu)
         add("Open Configuration", action: #selector(openConfiguration), to: menu)
         add("Reload Configuration", action: #selector(reloadConfiguration), to: menu)
@@ -34,9 +43,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkey.onPress = { [weak self] in self?.pressed() }
         hotkey.onRelease = { [weak self] in self?.released() }
         speech.onStatus = { [weak self] in self?.setStatus($0) }
+        speech.onTranscript = { [weak self] in self?.overlay.update(transcript: $0) }
         speech.onComplete = { [weak self] text, warning in
             guard let self else { return }
+            // The recognizer can end a session on its own (error, microphone change),
+            // so the menu state is reset here rather than only in the UI handlers.
+            self.menuSession = false
+            self.updateVoiceInputItem()
             self.lastTranscript = text
+            self.overlay.update(transcript: text)
+            self.overlay.hide(after: .milliseconds(text.isEmpty ? 300 : 700))
             let target = self.target
             self.insertionTask = Task { [weak self] in
                 guard let self else { return }
@@ -70,16 +86,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func pressed() {
-        guard configured, !held, !speech.isBusy, insertionTask == nil else { return }
+        if menuSession { finishRecording(); return }
+        guard !held else { return }
         held = true
-        target = insertion.captureTarget()
-        do { try speech.start(config: config) }
-        catch { setStatus(error.localizedDescription); NSSound.beep() }
+        startRecording()
     }
 
     private func released() {
+        guard held else { return }
         held = false
+        stopRecording()
+    }
+
+    @objc private func toggleVoiceInput() {
+        if menuSession { finishRecording(); return }
+        guard !held else { return }
+        menuSession = startRecording()
+        updateVoiceInputItem()
+    }
+
+    @discardableResult
+    private func startRecording() -> Bool {
+        guard configured, !speech.isBusy, insertionTask == nil else { return false }
+        target = insertion.captureTarget()
+        do {
+            try speech.start(config: config)
+            overlay.show()
+            return true
+        } catch {
+            setStatus(error.localizedDescription)
+            NSSound.beep()
+            return false
+        }
+    }
+
+    private func finishRecording() {
+        menuSession = false
+        stopRecording()
+        updateVoiceInputItem()
+    }
+
+    private func stopRecording() {
+        guard speech.isRecording else { return }
+        overlay.finalize()
         speech.stop()
+    }
+
+    private func updateVoiceInputItem() {
+        voiceInputItem.title = menuSession ? "Stop and Insert" : "Start Voice Input"
     }
 
     @objc private func grantPermissions() {
@@ -96,7 +150,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func reloadConfiguration() {
-        guard !speech.isBusy, !held else { setStatus("Release the hotkey before reloading configuration"); return }
+        guard !speech.isBusy, !held, !menuSession else { setStatus("Stop recording before reloading configuration"); return }
         do {
             let next = try ConfigManager.load()
             if !configured || next.keyCode != config.keyCode || next.carbonModifiers != config.carbonModifiers {
@@ -117,7 +171,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func cancelRecording() {
         held = false
+        menuSession = false
+        updateVoiceInputItem()
         speech.cancel()
+        overlay.hide()
         setStatus("Recording cancelled")
     }
 
@@ -125,7 +182,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // AVAudioEngine may post this notification from an audio thread.
         Task { @MainActor [weak self] in
             guard let self, self.speech.isRecording else { return }
-            self.speech.stop()
+            self.stopRecording()
             self.setStatus("Microphone changed; finalizing available audio")
         }
     }

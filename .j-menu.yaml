@@ -1,0 +1,75 @@
+menu:
+  - title: Build and sign
+    shell: 'SIGN_IDENTITY="Developer ID Application: Cyberneura K.K. (2YN5TLNQ9J)" ./scripts/build-app.sh'
+    help: Release build signed with the Developer ID certificate, so macOS keeps the privacy permissions across rebuilds.
+
+  - title: Run built app
+    shell:
+      - osascript -e 'tell application id "com.cyberneura.vocelo" to quit' 2>/dev/null || true
+      - open dist/Vocelo.app
+    help: Quit the running instance and launch dist/Vocelo.app. Does not rebuild.
+
+  - title: Build, sign and run
+    shell:
+      - 'SIGN_IDENTITY="Developer ID Application: Cyberneura K.K. (2YN5TLNQ9J)" ./scripts/build-app.sh'
+      - osascript -e 'tell application id "com.cyberneura.vocelo" to quit' 2>/dev/null || true
+      - open dist/Vocelo.app
+
+  - title: Quit app
+    shell: osascript -e 'tell application id "com.cyberneura.vocelo" to quit'
+
+  - title: Test
+    shell: ./scripts/test.sh
+    help: swift test with the Testing framework search paths supplied.
+
+  - title: Test (filter)
+    shell: ./scripts/test.sh --filter "{filter}"
+    args:
+      - name: filter
+        prompt: Test filter (regex)
+
+  - title: Build and sign (universal)
+    shell: 'ARCHS=universal SIGN_IDENTITY="Developer ID Application: Cyberneura K.K. (2YN5TLNQ9J)" ./scripts/build-app.sh'
+    help: Builds arm64 and x86_64 separately and merges them with lipo.
+
+  - title: Build (ad-hoc signed)
+    shell: ./scripts/build-app.sh
+    help: No certificate needed, but macOS asks for permissions again after every build.
+
+  - title: Show logs
+    shell: log stream --predicate 'subsystem == "com.cyberneura.vocelo" OR process == "Vocelo"' --level debug
+    help: Follow unified logging for the running app. Ctrl-C to stop.
+
+  - title: Open config
+    shell: ${EDITOR:-vim} ~/.config/vocelo/config.yaml
+
+  - title: Debug
+    help: SwiftPM diagnostics and debug builds.
+    submenu:
+      - title: Build (debug)
+        shell: swift build --disable-sandbox
+      - title: Verbose release build
+        shell: swift build -c release --disable-sandbox -v
+      - title: Show bin path
+        shell: swift build -c release --disable-sandbox --show-bin-path
+      - title: Describe package
+        shell: swift package describe
+      - title: Verify code signature
+        shell: codesign --verify --strict --verbose=2 dist/Vocelo.app && codesign -d -r- dist/Vocelo.app
+
+  - title: Clean
+    shell:
+      - swift package clean
+      - rm -rf dist
+    help: Remove .build and dist and start over.
+
+  - title: Notarize release
+    shell: 'DEVELOPER_ID="{developer_id}" NOTARY_PROFILE="{notary_profile}" ./scripts/notarize.sh'
+    help: Universal build, Developer ID signing, notarization, stapling, and dist/Vocelo.zip.
+    args:
+      - name: developer_id
+        prompt: Developer ID Application identity
+        default: "Developer ID Application: Cyberneura K.K. (2YN5TLNQ9J)"
+      - name: notary_profile
+        prompt: notarytool keychain profile
+        default: notary
