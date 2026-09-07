@@ -39,12 +39,18 @@ final class SpeechManager {
     private(set) var isRecording = false
     private(set) var isBusy = false
     var onStatus: ((String) -> Void)?
+    /// Live transcript across all segments, called whenever a partial result arrives.
+    var onTranscript: ((String) -> Void)?
     var onComplete: ((String, String?) -> Void)?
     private var warning: String?
 
-    static func requestPermissions() async -> Bool {
+    // SFSpeechRecognizer calls back on a background queue; a MainActor-inferred
+    // closure would trap in the Swift 6 isolation check, so keep this nonisolated.
+    nonisolated static func requestPermissions() async -> Bool {
         let speech = await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0 == .authorized) }
+            SFSpeechRecognizer.requestAuthorization { @Sendable status in
+                continuation.resume(returning: status == .authorized)
+            }
         }
         guard speech else { return false }
         return await AVCaptureDevice.requestAccess(for: .audio)
@@ -76,7 +82,7 @@ final class SpeechManager {
         }
         beginSegment()
         let sink = self.sink
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in sink.append(buffer) }
+        input.installTap(onBus: 0, bufferSize: 1024, format: format) { @Sendable buffer, _ in sink.append(buffer) }
         tapInstalled = true
         do {
             engine.prepare()
@@ -97,7 +103,7 @@ final class SpeechManager {
         let index = segments.count
         let token = session
         segments.append(Segment())
-        segments[index].task = recognizer.recognitionTask(with: request) { [weak self] result, error in
+        segments[index].task = recognizer.recognitionTask(with: request) { @Sendable [weak self] result, error in
             let text = result?.bestTranscription.formattedString
             let final = result?.isFinal ?? false
             let message = error?.localizedDescription
@@ -117,7 +123,10 @@ final class SpeechManager {
 
     private func receive(index: Int, token: UUID, text: String?, final: Bool, error: String?) {
         guard token == session, segments.indices.contains(index), !segments[index].done else { return }
-        if let text { segments[index].text = text }
+        if let text {
+            segments[index].text = text
+            onTranscript?(joinedTranscript())
+        }
         if final || error != nil {
             segments[index].done = true
             segments[index].deadline?.cancel()
@@ -162,13 +171,17 @@ final class SpeechManager {
 
     private func finishIfReady() {
         guard isBusy, !isRecording, segments.allSatisfy(\.done) else { return }
-        let texts = segments.map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-        let separator = config.language.hasPrefix("ja") || config.language.hasPrefix("zh") ? "" : " "
-        let text = texts.joined(separator: separator)
+        let text = joinedTranscript()
         let warning = self.warning
         isBusy = false
         segments = []
         onComplete?(text, warning)
+    }
+
+    private func joinedTranscript() -> String {
+        let texts = segments.map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        let separator = config.language.hasPrefix("ja") || config.language.hasPrefix("zh") ? "" : " "
+        return texts.joined(separator: separator)
     }
 
     func cancel() {

@@ -2,7 +2,7 @@ import Foundation
 import Carbon
 
 struct VoceloConfig: Equatable, Sendable {
-    var keyCode: UInt32 = 3 // ANSI F; physical virtual key code, independent of layout.
+    var keyCode: UInt32 = 9 // ANSI V; physical virtual key code, independent of layout.
     var modifiers: [String] = ["control", "shift"]
     var autoPunctuation = true
     var language = "ja-JP"
@@ -31,7 +31,7 @@ enum ConfigManager {
     static let example = """
     # Vocelo configuration. Reload from the menu after editing.
     hotkey:
-      key_code: 3 # Physical F key (macOS virtual key code).
+      key_code: 9 # Physical V key (macOS virtual key code).
       modifiers: [control, shift]
     auto_punctuation: true
     language: ja-JP

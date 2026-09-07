@@ -25,7 +25,12 @@ else
     cp "${binaries[0]}" "$app/Contents/MacOS/Vocelo"
 fi
 cp Info.plist "$app/Contents/Info.plist"
-# Ad-hoc signing supports local testing. Release signing is done separately.
-codesign --force --sign - --options runtime --entitlements Vocelo.entitlements "$app"
+# Ad-hoc signing changes the code hash on every build, so macOS asks for the privacy
+# permissions again each time. Set SIGN_IDENTITY to a stable certificate (for example
+# the Developer ID Application identity) to keep permissions across rebuilds.
+identity="${SIGN_IDENTITY:--}"
+sign_args=(--force --sign "$identity" --options runtime --entitlements Vocelo.entitlements)
+if [[ "$identity" != "-" ]]; then sign_args+=(--timestamp); fi
+codesign "${sign_args[@]}" "$app"
 codesign --verify --strict --verbose=2 "$app"
 printf 'Built %s\n' "$app"

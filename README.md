@@ -1,7 +1,7 @@
 # Vocelo
 
 A macOS 14+ menu-bar push-to-talk app, built with Apple Swift 6.3.1 and Swift
-Package Manager. Hold **Control + Shift + F**, speak, then release to insert the
+Package Manager. Hold **Control + Shift + V**, speak, then release to insert the
 transcript into the focused application. Japanese (`ja-JP`) is the default.
 
 ## Build and run
@@ -32,7 +32,12 @@ registration does not require Input Monitoring. The app stays out of the Dock.
 Changing the app's location or signing identity can require granting access again.
 
 Focus an editable field, hold the hotkey, speak, and release. A filled microphone
-means recording; the menu shows status and errors. The app preserves the last
+means recording; the menu shows status and errors. While recording, a floating
+panel in the middle of the screen shows the live transcript. It never takes
+focus and fades out once the text has been inserted. **Start Voice Input** in the
+menu records without holding a key: it runs until you choose **Stop and Insert**
+or tap the hotkey once. The text goes to the app that was frontmost when you
+clicked the menu. The app preserves the last
 transcript in memory for **Copy Last Transcript** if insertion fails. It does not
 save audio or transcripts to disk. **Cancel Recording**, sleep, or session lock
 cancels active recording. Microphone changes finalize available audio.
@@ -43,7 +48,7 @@ On first launch Vocelo creates `~/.config/vocelo/config.yaml`:
 
 ```yaml
 hotkey:
-  key_code: 3
+  key_code: 9
   modifiers: [control, shift]
 auto_punctuation: true
 language: ja-JP
@@ -61,7 +66,7 @@ other YAML features are unsupported. Unknown/duplicate fields are rejected;
 omitted fields retain defaults.
 
 Modifiers are `control`, `shift`, `option`, and `command`. At least one is required.
-`key_code` is a macOS **physical virtual key code**, not a character: F = 3,
+`key_code` is a macOS **physical virtual key code**, not a character: V = 9, F = 3,
 Space = 49. Modifier-only hotkeys are rejected. Carbon's modifiers do not select
 left versus right Option; side-specific modifier gestures would require a separate
 implementation using the physical key codes (left Option 58, right Option 61).
