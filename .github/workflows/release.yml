@@ -161,6 +161,9 @@ jobs:
         run: |
           latest=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1 || true)
           sudo xcode-select -s "${latest:-/Applications/Xcode.app}"
+          # Printed so the log says which Xcode was taken, rather than leaving it to
+          # be inferred from the Swift version.
+          xcode-select -p
           swift --version
 
       - name: Run tests
@@ -201,6 +204,9 @@ jobs:
         run: |
           latest=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1 || true)
           sudo xcode-select -s "${latest:-/Applications/Xcode.app}"
+          # Printed so the log says which Xcode was taken, rather than leaving it to
+          # be inferred from the Swift version.
+          xcode-select -p
           swift --version
 
       # Each missing secret does fail something eventually -- an empty certificate
