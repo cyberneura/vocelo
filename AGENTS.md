@@ -28,6 +28,9 @@ open dist/Vocelo.app
 ```
 
 - Always run the `.app` bundle, never `swift run`: privacy permissions are tied to the bundle.
+- `/Applications/Vocelo.app` (the Homebrew cask) and `dist/Vocelo.app` share the bundle id, so
+  anything addressing `com.cyberneura.vocelo` -- the j-menu quit entry, `open -b` -- may reach
+  either. Name the path when it matters. TCC grants are per copy, so each asks separately.
 - Sign local builds with `SIGN_IDENTITY`. Ad-hoc signing (the default when unset) changes the
   code hash each build and macOS asks for Microphone / Speech / Accessibility again.
 - Swift build does not work inside the Claude Code Bash sandbox (module cache under
