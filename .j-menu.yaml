@@ -63,9 +63,17 @@ menu:
       - rm -rf dist
     help: Remove .build and dist and start over.
 
-  - title: Notarize release
+  - title: Release (push a new version)
+    shell: ./scripts/release.sh {bump}
+    help: Bumps VERSION, pushes it to main, and watches the GitHub Actions release it starts.
+    args:
+      - name: bump
+        prompt: Which part to bump
+        default: patch
+
+  - title: Notarize release (local)
     shell: 'DEVELOPER_ID="{developer_id}" NOTARY_PROFILE="{notary_profile}" ./scripts/notarize.sh'
-    help: Universal build, Developer ID signing, notarization, stapling, and dist/Vocelo.zip.
+    help: The release workflow's sequence run locally — universal build, signing, notarization, stapling, and the dmg.
     args:
       - name: developer_id
         prompt: Developer ID Application identity

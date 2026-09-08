@@ -1,12 +1,21 @@
 # Vocelo
 
-A macOS 14+ menu-bar push-to-talk app, built with Apple Swift 6.3.1 and Swift
+A macOS 14+ menu-bar push-to-talk app, built with Apple Swift 6.2 and Swift
 Package Manager. Hold **Control + Shift + V**, speak, then release to insert the
 transcript into the focused application. Japanese (`ja-JP`) is the default.
 
+## Installation
+
+```sh
+brew install --cask cyberneura/tap/vocelo
+```
+
+That puts a signed, notarized `Vocelo.app` in `/Applications`. `brew upgrade --cask
+vocelo` follows the latest release; the tap picks it up within an hour of publication.
+
 ## Build and run
 
-Install the Swift 6.3.1 toolchain / compatible Apple command-line tools, then:
+Install the Swift 6.2 toolchain / compatible Apple command-line tools, then:
 
 ```sh
 ./scripts/test.sh
@@ -108,12 +117,40 @@ macOS offers no atomic clipboard transaction or
 paste-consumed acknowledgment: a very slow app or clipboard manager can interfere.
 Use Copy Last Transcript to recover. Some apps reject synthetic paste or AX writes.
 
+## Releasing
+
+`VERSION` decides releases. On every push to main the workflow
+(`.github/workflows/release.yml`) asks whether the version in that file is already
+published, and if it is not it runs the tests, builds a universal bundle, signs it
+with the Developer ID certificate, notarizes and staples both the app and the dmg,
+and publishes `Vocelo_<version>_universal.dmg` as `v<version>`. Pushing a published
+version again does nothing, and a version left unpublished is released by the next
+push that comes along.
+
+Ordinarily the change itself moves `VERSION`, and merging it releases that version.
+When what is on main is already the code you want out and only the number is
+missing:
+
+```sh
+./scripts/release.sh          # patch; also minor and major
+```
+
+That picks the next number, pushes it to main and follows the run. The six
+`APPLE_*` repository secrets the build needs are already set; nothing else about a
+release is manual.
+
+The Homebrew cask lives in
+[cyberneura/homebrew-tap](https://github.com/cyberneura/homebrew-tap)
+(`Casks/vocelo.rb`) and is updated by the tap itself, which looks at the latest
+release every hour. This repository never pushes to the tap, so a new version
+appears in `brew upgrade` after that delay.
+
 ## Developer ID distribution
 
-Local builds are **not notarized**. A release requires a Developer ID Application
-certificate with its private key and an Apple notarization Keychain profile.
-Configure the profile using `xcrun notarytool store-credentials` outside the repo.
-Then run:
+Local builds from `scripts/build-app.sh` are **not notarized**. The release workflow
+does the notarizing; to do the same thing by hand you need a Developer ID
+Application certificate with its private key and an Apple notarization Keychain
+profile, configured with `xcrun notarytool store-credentials` outside the repo:
 
 ```sh
 DEVELOPER_ID='Developer ID Application: Your Name (TEAMID)' \
@@ -121,11 +158,13 @@ NOTARY_PROFILE='vocelo-notary' ./scripts/notarize.sh
 ```
 
 The script builds a universal `.app`, signs with the hardened runtime and audio
-input entitlement, submits it to Apple, staples and validates the ticket, runs
-Gatekeeper assessment, then creates `dist/Vocelo.zip`. Distribution is outside
-the App Store; the app is not sandboxed. No signing credentials belong in this
-repository. Edit the bundle identifier/version in `Info.plist` before release if
-needed. No Input Monitoring or Apple Events entitlement is used.
+input entitlement, submits it to Apple, staples and validates the ticket, then
+builds, signs, notarizes and staples `dist/Vocelo_<version>_universal.dmg`.
+Distribution is outside the App Store; the app is not sandboxed. No signing
+credentials belong in this repository. `scripts/make-dmg.sh` packages an already
+built `dist/Vocelo.app` on its own. The bundle identifier is in `Info.plist`, where
+the version is a `__VERSION__` placeholder filled in from `VERSION` at build time.
+No Input Monitoring or Apple Events entitlement is used.
 
 ## Verification
 
