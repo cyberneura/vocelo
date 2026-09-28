@@ -166,6 +166,30 @@ built `dist/Vocelo.app` on its own. The bundle identifier is in `Info.plist`, wh
 the version is a `__VERSION__` placeholder filled in from `VERSION` at build time.
 No Input Monitoring or Apple Events entitlement is used.
 
+## License
+
+Vocelo is released under the [MIT License](LICENSE).
+
+## Third-party licenses
+
+Vocelo bundles no third-party libraries: it is built from its own sources, the
+Swift standard library and Apple's system frameworks, which ship with macOS.
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt) says so, and the app shows the
+same text, preceded by its own MIT license, under **Third-Party Licenses…** in its
+menu-bar menu.
+
+The file is generated, together with `Sources/Vocelo/ThirdPartyNotices.swift`
+that embeds it and `LICENSE` in the binary. Rerun the generator and commit both
+files whenever the dependencies or `LICENSE` change:
+
+```sh
+./scripts/generate-third-party-notices.sh          # rewrite
+./scripts/generate-third-party-notices.sh --check  # what CI runs
+```
+
+The generator refuses to run once `Package.swift` declares a package dependency,
+until it is extended to list those packages and their license texts.
+
 ## Verification
 
 `swift test` exercises defaults, overrides, and rejection of malformed or unsafe

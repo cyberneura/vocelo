@@ -13,11 +13,13 @@ no third-party dependencies. Frameworks: AppKit, Carbon (global hotkey), Speech
 - `Sources/Vocelo/TranscriptOverlay.swift` — non-activating HUD panel shown while recording
 - `Sources/Vocelo/TextInsertion.swift` — insert via Accessibility, pasteboard fallback
 - `Sources/Vocelo/ConfigManager.swift` — `~/.config/vocelo/config.yaml`, restricted YAML loader
-- `Tests/VoceloTests/` — swift-testing tests for the config loader
+- `Tests/VoceloTests/` — swift-testing tests for the config loader and the embedded notices
 - `VERSION` — the released version; `Info.plist` carries `__VERSION__` and is filled in at build
 - `scripts/build-app.sh` / `test.sh` / `make-dmg.sh` / `notarize.sh` / `release.sh`
 - `.github/workflows/release.yml` — build, sign, notarize and publish on a version change
 - `.j-menu.yaml` — j-menu entries for build, sign, run, test, release
+- `LICENSE` (MIT, Cyberneura) / `THIRD-PARTY-NOTICES.txt` — the latter shown by the menu's
+  **Third-Party Licenses…** (`Sources/Vocelo/LicensesWindow.swift`)
 
 ## Build, test, run
 
@@ -38,6 +40,21 @@ open dist/Vocelo.app
 - Bump `VERSION` in the change itself; both `Info.plist` version keys are filled in from it.
   Merging that change to main is what publishes the version, so do not also run
   `scripts/release.sh` afterwards -- that would put out a second release with no code in it.
+
+## Third-party notices
+
+- `THIRD-PARTY-NOTICES.txt` and `Sources/Vocelo/ThirdPartyNotices.swift` are both written by
+  `scripts/generate-third-party-notices.sh`. Never edit either by hand. The Swift file embeds the
+  notices and `LICENSE` in the binary (the window shows both, since `LICENSE` is not in the
+  bundle); a SwiftPM resource would not work, because `build-app.sh` copies only the executable
+  into the bundle and `Bundle.module` traps there. Changing `LICENSE` also needs a rerun.
+- When adding or updating a dependency, rerun the script and commit both files. It currently
+  writes "no third-party libraries" and refuses to run once `Package.swift` has a
+  `.package(...)`: extend it first to list each pinned package from `Package.resolved` with its
+  license text from `.build/checkouts/<name>/`. Do not add a package under GPL / LGPL / AGPL
+  without asking.
+- CI (`test` job) runs the script with `--check`, and `ThirdPartyNoticesTests` checks that the
+  embedded texts match the files.
 
 ## Concurrency rules
 
