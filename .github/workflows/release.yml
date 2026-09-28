@@ -166,6 +166,12 @@ jobs:
           xcode-select -p
           swift --version
 
+      # Before the tests because it is cheap and says exactly what to run. It catches a
+      # package dependency added without teaching the generator to list it, and a
+      # notices file edited by hand; the tests catch the embedded copy drifting from it.
+      - name: Check third-party notices
+        run: ./scripts/generate-third-party-notices.sh --check
+
       - name: Run tests
         run: ./scripts/test.sh
 

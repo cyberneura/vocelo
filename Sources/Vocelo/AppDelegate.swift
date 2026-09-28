@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let speech = SpeechManager()
     private let insertion = TextInsertion()
     private let overlay = TranscriptOverlay()
+    private let licenses = LicensesWindow()
     private var config = VoceloConfig()
     private var configured = false
     private var held = false
@@ -38,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("Copy Last Transcript", action: #selector(copyLastTranscript), to: menu)
         add("Cancel Recording", action: #selector(cancelRecording), to: menu)
         menu.addItem(.separator())
+        add("Third-Party Licenses…", action: #selector(showLicenses), to: menu)
         add("Quit Vocelo", action: #selector(quit), to: menu)
         statusItem.menu = menu
         hotkey.onPress = { [weak self] in self?.pressed() }
@@ -185,6 +187,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.stopRecording()
             self.setStatus("Microphone changed; finalizing available audio")
         }
+    }
+
+    @objc private func showLicenses() {
+        licenses.show()
     }
 
     @objc private func quit() {
