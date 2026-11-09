@@ -4,6 +4,8 @@ A macOS 14+ menu-bar push-to-talk app, built with Apple Swift 6.2 and Swift
 Package Manager. Hold **Control + Shift + V**, speak, then release to insert the
 transcript into the focused application. Japanese (`ja-JP`) is the default.
 
+Website: https://www.cyberneura.com/app/vocelo
+
 ## Installation
 
 ```sh
