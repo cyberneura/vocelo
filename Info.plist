@@ -16,5 +16,7 @@
     <key>NSHighResolutionCapable</key><true/>
     <key>NSMicrophoneUsageDescription</key><string>Vocelo records your voice while you hold the dictation hotkey.</string>
     <key>NSSpeechRecognitionUsageDescription</key><string>Vocelo transcribes your voice on this Mac to insert text into the active app.</string>
+    <key>CFBundleIconFile</key><string>icon.icns</string>
+    <key>CFBundleIconName</key><string>Vocelo</string>
 </dict>
 </plist>

@@ -81,6 +81,12 @@ Library Exception to the Apache License 2.0, which does not require attribution
 for compiled code.
 EOF
 
+# The app icon includes Bootstrap Icons artwork; include its attribution too.
+{
+    printf '\nBootstrap Icons (app icon artwork)\n\n'
+    cat resources/app-icons/Bootstrap-Icons-LICENSE.txt
+} >> "$notices_tmp"
+
 # Raw strings, so a backslash or quote in a license text is taken as written. The one
 # sequence that would end them early is refused rather than escaped.
 for text in LICENSE "$notices_tmp"; do
