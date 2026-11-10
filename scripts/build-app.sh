@@ -43,6 +43,7 @@ if grep -q "<string>__VERSION__</string>" "$app/Contents/Info.plist"; then
     echo "the version placeholder is still in the built Info.plist" >&2
     exit 1
 fi
+cp packaging/icons/icon.icns packaging/icons/Assets.car "$app/Contents/Resources/"
 # Ad-hoc signing changes the code hash on every build, so macOS asks for the privacy
 # permissions again each time. Set SIGN_IDENTITY to a stable certificate (for example
 # the Developer ID Application identity) to keep permissions across rebuilds.

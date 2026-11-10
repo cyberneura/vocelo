@@ -90,3 +90,13 @@ MainActor-isolated traps at runtime (`dispatch_assert_queue_fail`) instead of fa
   project's latest release and rewrites version / url / sha256, so nothing here pushes to the tap
   and a new version reaches `brew upgrade` up to an hour late.
 - `scripts/notarize.sh` (needs `DEVELOPER_ID` and `NOTARY_PROFILE`) is the same sequence locally.
+
+## macOS app icon
+
+Run `bash scripts/generate-macos-icons.sh` with Xcode on macOS. Fixed artwork,
+layout measurements, size-specific sources and the verification command are in
+`resources/app-icons/README.md`. Small @1x backgrounds reach the canvas edges;
+the glyph fits inside the central 80%. Larger backgrounds have 10% outer margins.
+Do not replace the generated ICNS with `tauri icon` / `iconutil`: preserve the
+ARGB small entries and the matching Assets.car / CFBundleIconName registration.
+Native rendering is verified by `.github/workflows/macos-icons.yml`.
